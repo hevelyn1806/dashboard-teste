@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard IDEB & Evasão Escolar — Ceará</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0f1a;--surface:#111827;--surface2:#1a2235;--border:rgba(99,140,255,.12);
+    --accent:#4f7bff;--accent2:#ff6b6b;--accent3:#34d399;--accent4:#fbbf24;
+    --text:#e8edf5;--muted:#6b7a99;--glow:rgba(79,123,255,.15);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
+  .header{position:relative;padding:3rem 2.5rem 2rem;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#0b0f1a 0%,#0d1626 60%,#111827 100%);overflow:hidden}
+  .header::before{content:'';position:absolute;top:-80px;right:-80px;width:420px;height:420px;background:radial-gradient(circle,rgba(79,123,255,.08) 0%,transparent 70%);pointer-events:none}
+  .header-badge{display:inline-block;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);background:rgba(79,123,255,.1);border:1px solid rgba(79,123,255,.3);padding:.28rem .8rem;border-radius:2px;margin-bottom:1.2rem}
+  .header h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:.7rem}
+  .header h1 span{color:var(--accent)}
+  .header-meta{font-size:.75rem;color:var(--muted);letter-spacing:.04em;display:flex;gap:2rem;flex-wrap:wrap;margin-top:.5rem}
+  .header-meta strong{color:var(--text)}
+  .tabs-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 2.5rem;overflow-x:auto}
+  .tab-btn{font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:1rem 1.5rem;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s}
+  .tab-btn:hover{color:var(--text)}.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .page{display:none;padding:2rem 2.5rem;animation:fadeUp .35s ease}.page.active{display:block}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem 1.5rem;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+  .kpi-card:hover{border-color:var(--accent);box-shadow:0 0 24px var(--glow)}
+  .kpi-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--kpi-color,var(--accent))}
+  .kpi-label{font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+  .kpi-value{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--kpi-color,var(--accent));line-height:1}
+  .kpi-sub{font-size:.7rem;color:var(--muted);margin-top:.4rem}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+  @media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;transition:box-shadow .2s}
+  .chart-card:hover{box-shadow:0 0 32px var(--glow)}.chart-card.full{grid-column:1/-1;margin-bottom:1.5rem}
+  .chart-title{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:.3rem}
+  .chart-sub{font-size:.68rem;color:var(--muted);margin-bottom:1.2rem;letter-spacing:.03em}
+  .chart-container{position:relative}
+  .filter-row{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+  .search-box{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.6rem 1rem;color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;outline:none;transition:border-color .2s}
+  .search-box:focus{border-color:var(--accent)}
+  .filter-select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.6rem 1rem;color:var(--text);font-family:'DM Mono',monospace;font-size:.72rem;outline:none;cursor:pointer}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.72rem}
+  thead tr{border-bottom:2px solid var(--border)}
+  th{text-align:left;padding:.6rem 1rem;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none}
+  th:hover{color:var(--accent)}td{padding:.55rem 1rem;border-bottom:1px solid rgba(99,140,255,.06)}
+  tr:hover td{background:rgba(79,123,255,.04)}
+  .badge{display:inline-block;padding:.18rem .55rem;border-radius:3px;font-size:.62rem;font-weight:500;letter-spacing:.04em}
+  .badge-green{background:rgba(52,211,153,.15);color:var(--accent3)}.badge-red{background:rgba(255,107,107,.15);color:var(--accent2)}.badge-yellow{background:rgba(251,191,36,.15);color:var(--accent4)}
+  .cover{max-width:860px;margin:0 auto;padding:1rem 0 3rem}
+  .cover-title{font-family:'Fraunces',serif;font-size:clamp(1.4rem,3vw,2.2rem);font-weight:300;font-style:italic;color:var(--accent);margin-bottom:.5rem}
+  .cover-desc{font-size:.82rem;color:var(--muted);line-height:1.8;margin-bottom:2rem}
+  .cover-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1rem}
+  .cover-section h3{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+  .cover-section ul{list-style:none}
+  .cover-section ul li{font-size:.78rem;color:var(--muted);padding:.3rem 0;padding-left:1.2rem;position:relative;line-height:1.6}
+  .cover-section ul li::before{content:'→';position:absolute;left:0;color:var(--accent)}
+  .cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:700px){.cover-grid{grid-template-columns:1fr}}
+  .spark-bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle}
+  .footer{border-top:1px solid var(--border);padding:1.2rem 2.5rem;font-size:.65rem;color:var(--muted);letter-spacing:.06em;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">Inteligência de Negócios · Marketing</div>
+  <h1>IDEB &amp; <span>Evasão Escolar</span><br>nos Municípios do Ceará</h1>
+  <div class="header-meta">
+    <span><strong>Fonte:</strong> INEP / IBGE · Anos Finais do Ensino Fundamental</span>
+    <span><strong>Referência:</strong> IDEB 2017–2019 · Fluxo 2024</span>
+    <span><strong>Municípios analisados:</strong> 184</span>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="showPage('overview',this)">Visão Geral</button>
+  <button class="tab-btn" onclick="showPage('ideb',this)">IDEB</button>
+  <button class="tab-btn" onclick="showPage('abandono',this)">Evasão Escolar</button>
+  <button class="tab-btn" onclick="showPage('ranking',this)">Ranking</button>
+  <button class="tab-btn" onclick="showPage('cover',this)">Sobre</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#4f7bff"><div class="kpi-label">Municípios Analisados</div><div class="kpi-value">184</div><div class="kpi-sub">Anos Finais do EF — Ceará</div></div>
+    <div class="kpi-card" style="--kpi-color:#34d399"><div class="kpi-label">Bateram a Meta IDEB 2019</div><div class="kpi-value">160</div><div class="kpi-sub">86,9% dos municípios</div></div>
+    <div class="kpi-card" style="--kpi-color:#fbbf24"><div class="kpi-label">Melhoraram o IDEB</div><div class="kpi-value">146</div><div class="kpi-sub">79,3% entre 2017→2019</div></div>
+    <div class="kpi-card" style="--kpi-color:#a78bfa"><div class="kpi-label">Média IDEB 2019</div><div class="kpi-value">5,24</div><div class="kpi-sub">↑ de 4,91 em 2017 (+6,7%)</div></div>
+    <div class="kpi-card" style="--kpi-color:#ff6b6b"><div class="kpi-label">Média Evasão 2024</div><div class="kpi-value">0,49%</div><div class="kpi-sub">Maior caso: Jaguaruana 14,8%</div></div>
+    <div class="kpi-card" style="--kpi-color:#34d399"><div class="kpi-label">Média Aprovação 2024</div><div class="kpi-value">98,4%</div><div class="kpi-sub">16 municípios com 100%</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title">Evolução do IDEB Médio</div><div class="chart-sub">Comparativo 2017 vs 2019 — média estadual</div><div class="chart-container" style="height:220px"><canvas id="chartEvol"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Distribuição por Faixa IDEB 2019</div><div class="chart-sub">Concentração entre 4,5 e 5,5</div><div class="chart-container" style="height:220px"><canvas id="chartDist"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title">Alcance de Meta IDEB 2019</div><div class="chart-sub">Municípios que atingiram ou superaram a meta projetada</div><div class="chart-container" style="height:200px"><canvas id="chartMeta"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Composição do Fluxo Escolar 2024</div><div class="chart-sub">Média estadual: aprovação, reprovação e evasão</div><div class="chart-container" style="height:200px"><canvas id="chartFluxo"></canvas></div></div>
+  </div>
+</div>
+
+<!-- IDEB -->
+<div class="page" id="page-ideb">
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title">Top 10 — Maior IDEB 2019</div><div class="chart-sub">Municípios com melhor desempenho</div><div class="chart-container" style="height:300px"><canvas id="chartTop10"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Bottom 10 — Menor IDEB 2019</div><div class="chart-sub">Municípios com maior déficit educacional</div><div class="chart-container" style="height:300px"><canvas id="chartBot10"></canvas></div></div>
+  </div>
+  <div class="chart-card full"><div class="chart-title">IDEB 2017 vs IDEB 2019 — Top 30 Municípios</div><div class="chart-sub">Barras agrupadas · ordenado pelo IDEB 2019 decrescente</div><div class="chart-container" style="height:320px"><canvas id="chartComparativo"></canvas></div></div>
+</div>
+
+<!-- ABANDONO -->
+<div class="page" id="page-abandono">
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#ff6b6b"><div class="kpi-label">Maior Taxa de Evasão</div><div class="kpi-value">14,8%</div><div class="kpi-sub">Jaguaruana</div></div>
+    <div class="kpi-card" style="--kpi-color:#fbbf24"><div class="kpi-label">2ª maior taxa</div><div class="kpi-value">11,6%</div><div class="kpi-sub">Quixadá</div></div>
+    <div class="kpi-card" style="--kpi-color:#34d399"><div class="kpi-label">Evasão zero</div><div class="kpi-value">97</div><div class="kpi-sub">municípios com 0% de evasão</div></div>
+    <div class="kpi-card" style="--kpi-color:#4f7bff"><div class="kpi-label">Situação crítica (&gt;2%)</div><div class="kpi-value">10</div><div class="kpi-sub">municípios requerem atenção</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title">Top 10 — Maior Taxa de Evasão 2024</div><div class="chart-sub">Em % de alunos que abandonaram</div><div class="chart-container" style="height:280px"><canvas id="chartAbandonoTop"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Distribuição da Evasão por Faixa</div><div class="chart-sub">Agrupamento por percentual de abandono</div><div class="chart-container" style="height:280px"><canvas id="chartAbandonoDist"></canvas></div></div>
+  </div>
+  <div class="chart-card full"><div class="chart-title">Taxa de Aprovação × Evasão — todos os municípios</div><div class="chart-sub">Dispersão · tamanho proporcional ao IDEB 2019 · passe o mouse para detalhes</div><div class="chart-container" style="height:340px"><canvas id="chartScatter"></canvas></div></div>
+</div>
+
+<!-- RANKING -->
+<div class="page" id="page-ranking">
+  <div class="filter-row">
+    <input class="search-box" type="text" id="searchInput" placeholder="Buscar município..." oninput="filterTable()">
+    <select class="filter-select" id="sortSelect" onchange="filterTable()">
+      <option value="ideb19">Ordenar por IDEB 2019</option>
+      <option value="ideb17">Ordenar por IDEB 2017</option>
+      <option value="abandono">Ordenar por Evasão</option>
+      <option value="aprovacao">Ordenar por Aprovação</option>
+    </select>
+    <select class="filter-select" id="orderSelect" onchange="filterTable()">
+      <option value="desc">Maior → Menor</option>
+      <option value="asc">Menor → Maior</option>
+    </select>
+  </div>
+  <div class="chart-card" style="padding:0">
+    <div class="table-wrap"><table id="rankTable">
+      <thead><tr><th>#</th><th>Município</th><th onclick="setSort('ideb17')">IDEB 2017</th><th onclick="setSort('ideb19')">IDEB 2019 ↕</th><th onclick="setSort('aprovacao')">Aprovação 2024</th><th onclick="setSort('abandono')">Evasão 2024</th><th>Status Meta</th></tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- SOBRE -->
+<div class="page" id="page-cover">
+  <div class="cover">
+    <div class="cover-title">Análise do IDEB e Evasão Escolar nos Municípios do Ceará</div>
+    <p class="cover-desc">Este dashboard apresenta uma análise comparativa do Índice de Desenvolvimento da Educação Básica (IDEB) e das taxas de fluxo escolar nos 184 municípios do estado do Ceará, com foco nos Anos Finais do Ensino Fundamental. A análise integra dados de desempenho (IDEB 2017 e 2019), metas projetadas pelo INEP e indicadores de aprovação, reprovação e abandono escolar de 2024.</p>
+    <div class="cover-grid">
+      <div class="cover-section"><h3>Objetivos da Análise</h3><ul>
+        <li>Identificar municípios com melhor e pior desempenho educacional</li>
+        <li>Comparar a evolução do IDEB entre 2017 e 2019</li>
+        <li>Mapear municípios que atingiram ou não a meta IDEB projetada</li>
+        <li>Analisar a relação entre IDEB e taxas de evasão escolar</li>
+        <li>Subsidiar políticas públicas de intervenção educacional</li>
+      </ul></div>
+      <div class="cover-section"><h3>Fontes dos Dados</h3><ul>
+        <li>INEP — Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira</li>
+        <li>IDEB: Anos Finais do Ensino Fundamental (6º ao 9º ano)</li>
+        <li>Resultados 2017 e 2019 com metas projetadas por município</li>
+        <li>Taxas de fluxo escolar (aprovação, reprovação, abandono) — 2024</li>
+        <li>Planilha tratada e consolidada para uso analítico</li>
+      </ul></div>
+      <div class="cover-section"><h3>Tratamento dos Dados</h3><ul>
+        <li>Remoção de valores ausentes na variação percentual (37 registros imputados como 0)</li>
+        <li>Preenchimento de reprovação nula com 0% (29 registros)</li>
+        <li>Categorização por faixa de IDEB para análise de distribuição</li>
+        <li>Criação de métricas: alcance de meta, classificação de evasão crítica</li>
+        <li>Padronização de nomes de municípios para consistência</li>
+      </ul></div>
+      <div class="cover-section"><h3>Indicadores Criados</h3><ul>
+        <li>Taxa de crescimento IDEB 2017 para 2019 por município</li>
+        <li>Comparação entre IDEB realizado e meta projetada</li>
+        <li>Classificação de evasão: Crítica (&gt;2%), Atenção (0,5–2%), Baixa (&lt;0,5%)</li>
+        <li>Faixas de IDEB 2019 para análise de distribuição estadual</li>
+        <li>Ranking municipal interativo por múltiplos critérios</li>
+      </ul></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Dashboard desenvolvido para Inteligência de Negócios · Marketing · Dados: INEP · Anos Finais do EF · Ceará · 2017–2024</div>
+
+<script>
+const DATA = [{"Municipio":"Abaiara","IDEB_AF_2019":4.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.6,"Evolucao_AF":-0.2,"IDEB_AF_2017":4.8},{"Municipio":"Acarape","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.2,"IDEB_AF_2017":4.7},{"Municipio":"Acaraú","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.2,"IDEB_AF_2017":5.1},{"Municipio":"Acopiara","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.2,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.3,"IDEB_AF_2017":5.2},{"Municipio":"Aiuaba","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.0,"Evolucao_AF":0.7,"IDEB_AF_2017":4.8},{"Municipio":"Alcântaras","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.2,"IDEB_AF_2017":4.9},{"Municipio":"Altaneira","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.4,"Evolucao_AF":3.85,"IDEB_AF_2017":5.4},{"Municipio":"Alto Santo","IDEB_AF_2019":5.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.7,"Evolucao_AF":1.2,"IDEB_AF_2017":4.6},{"Municipio":"Amontada","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.9,"Taxa_Aprovacao_AF_2024":98.3,"Evolucao_AF":0.2,"IDEB_AF_2017":5.0},{"Municipio":"Antonina do Norte","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.9,"Evolucao_AF":0.6,"IDEB_AF_2017":4.5},{"Municipio":"Apuiarés","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.8,"Evolucao_AF":0.6,"IDEB_AF_2017":4.6},{"Municipio":"Aquiraz","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.4,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.7,"IDEB_AF_2017":4.4},{"Municipio":"Aracati","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.6,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":0.5,"IDEB_AF_2017":4.7},{"Municipio":"Aracoiaba","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.3,"Evolucao_AF":0.3,"IDEB_AF_2017":4.6},{"Municipio":"Ararendá","IDEB_AF_2019":6.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":1.5,"IDEB_AF_2017":5.4},{"Municipio":"Araripe","IDEB_AF_2019":5.6,"Taxa_Abandono_AF_2024":0.8,"Taxa_Aprovacao_AF_2024":89.1,"Evolucao_AF":0.6,"IDEB_AF_2017":5.0},{"Municipio":"Aratuba","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":-0.1,"IDEB_AF_2017":5.4},{"Municipio":"Arneiroz","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.3,"Evolucao_AF":0.4,"IDEB_AF_2017":4.4},{"Municipio":"Assaré","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":-0.2,"IDEB_AF_2017":4.9},{"Municipio":"Aurora","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.7,"Evolucao_AF":-0.1,"IDEB_AF_2017":4.8},{"Municipio":"Baixio","IDEB_AF_2019":4.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.1,"IDEB_AF_2017":4.3},{"Municipio":"Banabuiú","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":1.2,"Taxa_Aprovacao_AF_2024":98.1,"Evolucao_AF":0.5,"IDEB_AF_2017":4.4},{"Municipio":"Barbalha","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.2,"IDEB_AF_2017":5.3},{"Municipio":"Barreira","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.2,"IDEB_AF_2017":4.6},{"Municipio":"Barro","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.2,"IDEB_AF_2017":5.2},{"Municipio":"Barroquinha","IDEB_AF_2019":5.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.6,"IDEB_AF_2017":5.3},{"Municipio":"Baturité","IDEB_AF_2019":4.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.5,"IDEB_AF_2017":4.0},{"Municipio":"Beberibe","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":95.1,"Evolucao_AF":0.1,"IDEB_AF_2017":5.3},{"Municipio":"Bela Cruz","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.1,"IDEB_AF_2017":5.6},{"Municipio":"Boa Viagem","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.6,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":2.13,"IDEB_AF_2017":4.8},{"Municipio":"Brejo Santo","IDEB_AF_2019":5.8,"Taxa_Abandono_AF_2024":5.7,"Taxa_Aprovacao_AF_2024":99.0,"Evolucao_AF":-0.5,"IDEB_AF_2017":6.3},{"Municipio":"Camocim","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.4,"Taxa_Aprovacao_AF_2024":97.8,"Evolucao_AF":0.0,"IDEB_AF_2017":5.3},{"Municipio":"Campos Sales","IDEB_AF_2019":5.8,"Taxa_Abandono_AF_2024":1.3,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":1.1,"IDEB_AF_2017":4.7},{"Municipio":"Canindé","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":1.0,"IDEB_AF_2017":4.7},{"Municipio":"Capistrano","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.0,"IDEB_AF_2017":4.4},{"Municipio":"Caridade","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":6.0,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.3,"IDEB_AF_2017":4.6},{"Municipio":"Cariré","IDEB_AF_2019":5.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.1,"Evolucao_AF":0.6,"IDEB_AF_2017":5.2},{"Municipio":"Caririaçu","IDEB_AF_2019":4.6,"Taxa_Abandono_AF_2024":0.3,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":4.35,"IDEB_AF_2017":4.8},{"Municipio":"Cariús","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.6,"IDEB_AF_2017":4.4},{"Municipio":"Carnaubal","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.6,"Evolucao_AF":0.4,"IDEB_AF_2017":4.8},{"Municipio":"Cascavel","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":98.3,"Evolucao_AF":0.3,"IDEB_AF_2017":5.1},{"Municipio":"Catarina","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.7,"IDEB_AF_2017":4.2},{"Municipio":"Catunda","IDEB_AF_2019":6.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.2,"Evolucao_AF":1.1,"IDEB_AF_2017":5.8},{"Municipio":"Caucaia","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":1.0,"Taxa_Aprovacao_AF_2024":97.4,"Evolucao_AF":-16.0,"IDEB_AF_2017":4.2},{"Municipio":"Cedro","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.2,"IDEB_AF_2017":4.5},{"Municipio":"Chaval","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.4,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.4,"IDEB_AF_2017":4.6},{"Municipio":"Choró","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.5,"IDEB_AF_2017":4.4},{"Municipio":"Chorozinho","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":1.5,"Taxa_Aprovacao_AF_2024":95.8,"Evolucao_AF":0.8,"IDEB_AF_2017":4.6},{"Municipio":"Coreaú","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.3,"IDEB_AF_2017":5.4},{"Municipio":"Crateús","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":98.9,"Evolucao_AF":0.4,"IDEB_AF_2017":4.7},{"Municipio":"Crato","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.6,"IDEB_AF_2017":4.4},{"Municipio":"Croatá","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.5,"IDEB_AF_2017":4.7},{"Municipio":"Cruz","IDEB_AF_2019":6.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.5,"IDEB_AF_2017":6.4},{"Municipio":"Deputado Irapuan Pinheiro","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.3,"IDEB_AF_2017":5.1},{"Municipio":"Ererê","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.6,"Evolucao_AF":0.5,"IDEB_AF_2017":4.3},{"Municipio":"Eusébio","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.1,"IDEB_AF_2017":5.2},{"Municipio":"Farias Brito","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":-0.3,"IDEB_AF_2017":5.4},{"Municipio":"Forquilha","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":95.8,"Evolucao_AF":0.2,"IDEB_AF_2017":5.5},{"Municipio":"Fortaleza","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.4,"IDEB_AF_2017":4.7},{"Municipio":"Fortim","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.6,"Evolucao_AF":0.7,"IDEB_AF_2017":5.0},{"Municipio":"Frecheirinha","IDEB_AF_2019":5.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":94.8,"Evolucao_AF":-0.2,"IDEB_AF_2017":6.1},{"Municipio":"General Sampaio","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.8,"Evolucao_AF":-0.1,"IDEB_AF_2017":5.2},{"Municipio":"Graça","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":0.1,"IDEB_AF_2017":5.2},{"Municipio":"Granja","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":97.3,"Evolucao_AF":-0.1,"IDEB_AF_2017":5.1},{"Municipio":"Granjeiro","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.6,"Evolucao_AF":0.5,"IDEB_AF_2017":5.0},{"Municipio":"Groaíras","IDEB_AF_2019":6.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.1,"Evolucao_AF":0.2,"IDEB_AF_2017":5.9},{"Municipio":"Guaiúba","IDEB_AF_2019":4.6,"Taxa_Abandono_AF_2024":2.6,"Taxa_Aprovacao_AF_2024":93.0,"Evolucao_AF":0.4,"IDEB_AF_2017":4.2},{"Municipio":"Guaraciaba do Norte","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.2,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":0.4,"IDEB_AF_2017":4.8},{"Municipio":"Guaramiranga","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.1,"IDEB_AF_2017":5.0},{"Municipio":"Hidrolândia","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.5,"IDEB_AF_2017":4.6},{"Municipio":"Horizonte","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.2,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.5,"IDEB_AF_2017":5.2},{"Municipio":"Ibaretama","IDEB_AF_2019":4.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.9,"Evolucao_AF":0.1,"IDEB_AF_2017":4.2},{"Municipio":"Ibiapina","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.2,"IDEB_AF_2017":5.0},{"Municipio":"Ibicuitinga","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.7,"IDEB_AF_2017":4.6},{"Municipio":"Icapuí","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.3,"Taxa_Aprovacao_AF_2024":93.2,"Evolucao_AF":-0.1,"IDEB_AF_2017":5.0},{"Municipio":"Icó","IDEB_AF_2019":4.2,"Taxa_Abandono_AF_2024":0.3,"Taxa_Aprovacao_AF_2024":94.5,"Evolucao_AF":0.0,"IDEB_AF_2017":4.1},{"Municipio":"Iguatu","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":98.1,"Evolucao_AF":0.5,"IDEB_AF_2017":4.6},{"Municipio":"Independência","IDEB_AF_2019":5.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.4,"IDEB_AF_2017":5.5},{"Municipio":"Ipaporanga","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":95.2,"Evolucao_AF":0.1,"IDEB_AF_2017":5.1},{"Municipio":"Ipaumirim","IDEB_AF_2019":3.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":-0.1,"IDEB_AF_2017":4.0},{"Municipio":"Ipu","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.3,"Taxa_Aprovacao_AF_2024":97.2,"Evolucao_AF":0.7,"IDEB_AF_2017":4.2},{"Municipio":"Ipueiras","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.6,"IDEB_AF_2017":4.5},{"Municipio":"Iracema","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.1,"Evolucao_AF":0.2,"IDEB_AF_2017":4.6},{"Municipio":"Irauçuba","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.6,"IDEB_AF_2017":5.1},{"Municipio":"Itaiçaba","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":15.69,"IDEB_AF_2017":5.9},{"Municipio":"Itaitinga","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.9,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.3,"IDEB_AF_2017":4.5},{"Municipio":"Itapajé","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.2,"IDEB_AF_2017":5.1},{"Municipio":"Itapipoca","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.3,"IDEB_AF_2017":5.0},{"Municipio":"Itapiúna","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.0,"IDEB_AF_2017":4.4},{"Municipio":"Itarema","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":98.5,"Evolucao_AF":0.0,"IDEB_AF_2017":4.7},{"Municipio":"Itatira","IDEB_AF_2019":5.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.2,"IDEB_AF_2017":5.7},{"Municipio":"Jaguaretama","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":1.6,"Taxa_Aprovacao_AF_2024":97.2,"Evolucao_AF":0.9,"IDEB_AF_2017":4.4},{"Municipio":"Jaguaribara","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.3,"IDEB_AF_2017":4.8},{"Municipio":"Jaguaribe","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.1,"IDEB_AF_2017":5.2},{"Municipio":"Jaguaruana","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":14.8,"Taxa_Aprovacao_AF_2024":98.9,"Evolucao_AF":0.6,"IDEB_AF_2017":4.7},{"Municipio":"Jardim","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":0.0,"IDEB_AF_2017":4.5},{"Municipio":"Jati","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.1,"Evolucao_AF":0.2,"IDEB_AF_2017":4.7},{"Municipio":"Jijoca de Jericoacoara","IDEB_AF_2019":7.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.3,"IDEB_AF_2017":6.7},{"Municipio":"Juazeiro do Norte","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":97.8,"Evolucao_AF":0.0,"IDEB_AF_2017":4.5},{"Municipio":"Jucás","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.7,"IDEB_AF_2017":4.8},{"Municipio":"Lavras da Mangabeira","IDEB_AF_2019":4.4,"Taxa_Abandono_AF_2024":0.8,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.3,"IDEB_AF_2017":4.1},{"Municipio":"Limoeiro do Norte","IDEB_AF_2019":5.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.6,"IDEB_AF_2017":5.0},{"Municipio":"Madalena","IDEB_AF_2019":4.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":-0.7,"IDEB_AF_2017":4.9},{"Municipio":"Maracanaú","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.1,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.4,"IDEB_AF_2017":4.9},{"Municipio":"Maranguape","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.0,"Evolucao_AF":0.3,"IDEB_AF_2017":4.7},{"Municipio":"Marco","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.6,"IDEB_AF_2017":4.4},{"Municipio":"Martinópole","IDEB_AF_2019":5.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.6,"Evolucao_AF":-0.2,"IDEB_AF_2017":5.8},{"Municipio":"Massapê","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.1,"IDEB_AF_2017":4.8},{"Municipio":"Mauriti","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":1.1,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.3,"IDEB_AF_2017":4.5},{"Municipio":"Meruoca","IDEB_AF_2019":5.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.1,"IDEB_AF_2017":5.8},{"Municipio":"Milagres","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.1,"IDEB_AF_2017":4.9},{"Municipio":"Milhã","IDEB_AF_2019":6.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.1,"Evolucao_AF":-0.2,"IDEB_AF_2017":6.6},{"Municipio":"Miraíma","IDEB_AF_2019":4.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.2,"IDEB_AF_2017":4.3},{"Municipio":"Missão Velha","IDEB_AF_2019":4.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":-0.1,"IDEB_AF_2017":4.4},{"Municipio":"Mombaça","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":2.2,"Taxa_Aprovacao_AF_2024":98.3,"Evolucao_AF":0.8,"IDEB_AF_2017":4.7},{"Municipio":"Monsenhor Tabosa","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":3.3,"Taxa_Aprovacao_AF_2024":98.5,"Evolucao_AF":0.0,"IDEB_AF_2017":4.9},{"Municipio":"Morada Nova","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":1.1,"Taxa_Aprovacao_AF_2024":98.7,"Evolucao_AF":-8.33,"IDEB_AF_2017":4.4},{"Municipio":"Moraújo","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":95.5,"Evolucao_AF":-14.04,"IDEB_AF_2017":4.9},{"Municipio":"Morrinhos","IDEB_AF_2019":5.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.6,"Evolucao_AF":-0.2,"IDEB_AF_2017":5.8},{"Municipio":"Mucambo","IDEB_AF_2019":7.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":1.8,"IDEB_AF_2017":5.2},{"Municipio":"Mulungu","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.5,"IDEB_AF_2017":4.3},{"Municipio":"Nova Olinda","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.5,"Evolucao_AF":-0.3,"IDEB_AF_2017":5.4},{"Municipio":"Nova Russas","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.3,"IDEB_AF_2017":4.8},{"Municipio":"Novo Oriente","IDEB_AF_2019":7.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":2.1,"IDEB_AF_2017":5.6},{"Municipio":"Ocara","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.7,"Evolucao_AF":0.4,"IDEB_AF_2017":4.7},{"Municipio":"Orós","IDEB_AF_2019":4.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.0,"Evolucao_AF":0.1,"IDEB_AF_2017":4.5},{"Municipio":"Pacajus","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.2,"Taxa_Aprovacao_AF_2024":95.5,"Evolucao_AF":0.2,"IDEB_AF_2017":4.7},{"Municipio":"Pacatuba","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.6,"Taxa_Aprovacao_AF_2024":98.2,"Evolucao_AF":0.3,"IDEB_AF_2017":4.8},{"Municipio":"Pacoti","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":0.5,"IDEB_AF_2017":4.5},{"Municipio":"Pacujá","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.2,"IDEB_AF_2017":5.0},{"Municipio":"Palhano","IDEB_AF_2019":6.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.0,"Evolucao_AF":0.5,"IDEB_AF_2017":5.5},{"Municipio":"Palmácia","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":-0.1,"IDEB_AF_2017":5.1},{"Municipio":"Paracuru","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.5,"IDEB_AF_2017":4.9},{"Municipio":"Paraipaba","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":-0.1,"IDEB_AF_2017":4.9},{"Municipio":"Parambu","IDEB_AF_2019":5.6,"Taxa_Abandono_AF_2024":1.9,"Taxa_Aprovacao_AF_2024":97.9,"Evolucao_AF":0.5,"IDEB_AF_2017":5.1},{"Municipio":"Paramoti","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":1.1,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.7,"IDEB_AF_2017":4.3},{"Municipio":"Pedra Branca","IDEB_AF_2019":6.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":1.1,"IDEB_AF_2017":5.0},{"Municipio":"Penaforte","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":1.3,"Taxa_Aprovacao_AF_2024":97.2,"Evolucao_AF":0.4,"IDEB_AF_2017":4.4},{"Municipio":"Pentecoste","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.0,"Evolucao_AF":0.1,"IDEB_AF_2017":4.6},{"Municipio":"Pereiro","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":1.4,"Taxa_Aprovacao_AF_2024":93.5,"Evolucao_AF":0.4,"IDEB_AF_2017":4.8},{"Municipio":"Pindoretama","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.1,"IDEB_AF_2017":5.0},{"Municipio":"Piquet Carneiro","IDEB_AF_2019":5.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.8,"Evolucao_AF":0.5,"IDEB_AF_2017":5.3},{"Municipio":"Pires Ferreira","IDEB_AF_2019":7.8,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.3,"Evolucao_AF":1.7,"IDEB_AF_2017":6.1},{"Municipio":"Poranga","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":3.7,"Taxa_Aprovacao_AF_2024":93.6,"Evolucao_AF":0.2,"IDEB_AF_2017":4.7},{"Municipio":"Porteiras","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.9,"Evolucao_AF":0.3,"IDEB_AF_2017":4.6},{"Municipio":"Potengi","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":3.3,"Taxa_Aprovacao_AF_2024":96.5,"Evolucao_AF":-0.4,"IDEB_AF_2017":5.4},{"Municipio":"Potiretama","IDEB_AF_2019":4.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":95.7,"Evolucao_AF":21.95,"IDEB_AF_2017":5.0},{"Municipio":"Quiterianópolis","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.7,"IDEB_AF_2017":4.6},{"Municipio":"Quixadá","IDEB_AF_2019":4.7,"Taxa_Abandono_AF_2024":11.6,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.1,"IDEB_AF_2017":4.6},{"Municipio":"Quixelô","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":4.0,"Taxa_Aprovacao_AF_2024":96.8,"Evolucao_AF":0.6,"IDEB_AF_2017":4.6},{"Municipio":"Quixeramobim","IDEB_AF_2019":6.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.7,"IDEB_AF_2017":5.7},{"Municipio":"Quixeré","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":0.5,"IDEB_AF_2017":4.9},{"Municipio":"Redenção","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.6,"IDEB_AF_2017":4.5},{"Municipio":"Reriutaba","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.8,"Evolucao_AF":0.0,"IDEB_AF_2017":4.9},{"Municipio":"Russas","IDEB_AF_2019":6.0,"Taxa_Abandono_AF_2024":0.6,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.1,"IDEB_AF_2017":5.9},{"Municipio":"Saboeiro","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.8,"Evolucao_AF":0.7,"IDEB_AF_2017":5.0},{"Municipio":"Salitre","IDEB_AF_2019":6.0,"Taxa_Abandono_AF_2024":1.9,"Taxa_Aprovacao_AF_2024":94.6,"Evolucao_AF":1.2,"IDEB_AF_2017":4.8},{"Municipio":"Santa Quitéria","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.6,"IDEB_AF_2017":4.9},{"Municipio":"Santana do Acaraú","IDEB_AF_2019":5.3,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":98.0,"Evolucao_AF":0.8,"IDEB_AF_2017":4.5},{"Municipio":"Santana do Cariri","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":99.3,"Evolucao_AF":-8.33,"IDEB_AF_2017":4.4},{"Municipio":"São Benedito","IDEB_AF_2019":4.8,"Taxa_Abandono_AF_2024":0.3,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.3,"IDEB_AF_2017":4.5},{"Municipio":"São Gonçalo do Amarante","IDEB_AF_2019":5.7,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.1,"IDEB_AF_2017":5.6},{"Municipio":"São João do Jaguaribe","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.4,"Evolucao_AF":0.6,"IDEB_AF_2017":4.9},{"Municipio":"São Luís do Curu","IDEB_AF_2019":4.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.6,"Evolucao_AF":0.0,"IDEB_AF_2017":4.0},{"Municipio":"Senador Pompeu","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":1.4,"Taxa_Aprovacao_AF_2024":97.1,"Evolucao_AF":0.9,"IDEB_AF_2017":4.1},{"Municipio":"Senador Sá","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.4,"Evolucao_AF":0.1,"IDEB_AF_2017":5.0},{"Municipio":"Sobral","IDEB_AF_2019":6.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.2,"Evolucao_AF":-0.3,"IDEB_AF_2017":7.2},{"Municipio":"Solonópole","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.0,"Evolucao_AF":0.2,"IDEB_AF_2017":4.8},{"Municipio":"Tabuleiro do Norte","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.7,"Taxa_Aprovacao_AF_2024":98.7,"Evolucao_AF":6.0,"IDEB_AF_2017":5.3},{"Municipio":"Tamboril","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":0.4,"IDEB_AF_2017":4.5},{"Municipio":"Tarrafas","IDEB_AF_2019":5.1,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":97.3,"Evolucao_AF":0.1,"IDEB_AF_2017":5.0},{"Municipio":"Tauá","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.9,"Evolucao_AF":0.1,"IDEB_AF_2017":5.1},{"Municipio":"Tejuçuoca","IDEB_AF_2019":4.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.5,"Evolucao_AF":-0.5,"IDEB_AF_2017":5.0},{"Municipio":"Tianguá","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.2,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.1,"IDEB_AF_2017":5.1},{"Municipio":"Trairi","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.6,"Taxa_Aprovacao_AF_2024":99.1,"Evolucao_AF":4.08,"IDEB_AF_2017":5.1},{"Municipio":"Tururu","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.5,"Taxa_Aprovacao_AF_2024":99.1,"Evolucao_AF":-2.04,"IDEB_AF_2017":4.8},{"Municipio":"Ubajara","IDEB_AF_2019":5.5,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.7,"Evolucao_AF":0.2,"IDEB_AF_2017":5.3},{"Municipio":"Umari","IDEB_AF_2019":4.9,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":100.0,"Evolucao_AF":0.2,"IDEB_AF_2017":4.7},{"Municipio":"Umirim","IDEB_AF_2019":4.6,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.2,"Evolucao_AF":-4.35,"IDEB_AF_2017":4.4},{"Municipio":"Uruburetama","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.3,"IDEB_AF_2017":4.7},{"Municipio":"Uruoca","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":96.8,"Evolucao_AF":0.4,"IDEB_AF_2017":4.8},{"Municipio":"Varjota","IDEB_AF_2019":5.2,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":98.8,"Evolucao_AF":0.3,"IDEB_AF_2017":4.9},{"Municipio":"Várzea Alegre","IDEB_AF_2019":5.0,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.6,"Evolucao_AF":0.6,"IDEB_AF_2017":4.4},{"Municipio":"Viçosa do Ceará","IDEB_AF_2019":5.4,"Taxa_Abandono_AF_2024":0.0,"Taxa_Aprovacao_AF_2024":99.5,"Evolucao_AF":0.4,"IDEB_AF_2017":5.0}];
+
+Chart.defaults.color='#6b7a99';Chart.defaults.borderColor='rgba(99,140,255,0.1)';Chart.defaults.font.family="'DM Mono',monospace";Chart.defaults.font.size=11;
+
+function ga(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Overview charts
+new Chart(document.getElementById('chartEvol'),{type:'bar',data:{labels:['IDEB 2017','IDEB 2019'],datasets:[{label:'Média estadual',data:[4.91,5.24],backgroundColor:[ga('#4f7bff',.4),'#4f7bff'],borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:4.5,max:5.5,grid:{color:'rgba(99,140,255,.06)'}},x:{grid:{display:false}}}}});
+new Chart(document.getElementById('chartDist'),{type:'bar',data:{labels:['3,5–4,5','4,5–5,5','5,5–6,5','6,5–7,5','7,5+'],datasets:[{data:[12,132,32,6,2],backgroundColor:['#ff6b6b','#4f7bff','#34d399','#fbbf24','#a78bfa'],borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} municípios`}}},scales:{y:{grid:{color:'rgba(99,140,255,.06)'}},x:{grid:{display:false}}}}});
+new Chart(document.getElementById('chartMeta'),{type:'doughnut',data:{labels:['Atingiram a meta','Não atingiram'],datasets:[{data:[160,24],backgroundColor:['#34d399','#ff6b6b'],borderWidth:2,borderColor:'#111827'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{padding:16,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} municípios (${(ctx.raw/184*100).toFixed(1)}%)`}}}}});
+new Chart(document.getElementById('chartFluxo'),{type:'doughnut',data:{labels:['Aprovação','Reprovação','Evasão'],datasets:[{data:[98.45,.76,.49],backgroundColor:['#34d399','#fbbf24','#ff6b6b'],borderWidth:2,borderColor:'#111827'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{padding:16,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>` ${ctx.raw}%`}}}}});
+
+// IDEB charts
+const top10=[...DATA].sort((a,b)=>b.IDEB_AF_2019-a.IDEB_AF_2019).slice(0,10);
+const bot10=[...DATA].sort((a,b)=>a.IDEB_AF_2019-b.IDEB_AF_2019).slice(0,10);
+new Chart(document.getElementById('chartTop10'),{type:'bar',data:{labels:top10.map(d=>d.Municipio),datasets:[{label:'IDEB 2019',data:top10.map(d=>d.IDEB_AF_2019),backgroundColor:top10.map(d=>d.IDEB_AF_2019>=7?'#34d399':'#4f7bff'),borderRadius:3,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:3,max:8.5,grid:{color:'rgba(99,140,255,.06)'}},y:{grid:{display:false}}}}});
+new Chart(document.getElementById('chartBot10'),{type:'bar',data:{labels:bot10.map(d=>d.Municipio),datasets:[{label:'IDEB 2019',data:bot10.map(d=>d.IDEB_AF_2019),backgroundColor:bot10.map(d=>d.IDEB_AF_2019<4.5?'#ff6b6b':'#fbbf24'),borderRadius:3,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:3,max:8.5,grid:{color:'rgba(99,140,255,.06)'}},y:{grid:{display:false}}}}});
+const top30=[...DATA].sort((a,b)=>b.IDEB_AF_2019-a.IDEB_AF_2019).slice(0,30);
+new Chart(document.getElementById('chartComparativo'),{type:'bar',data:{labels:top30.map(d=>d.Municipio.length>12?d.Municipio.slice(0,12)+'…':d.Municipio),datasets:[{label:'IDEB 2017',data:top30.map(d=>d.IDEB_AF_2017),backgroundColor:ga('#4f7bff',.4),borderRadius:2,borderSkipped:false},{label:'IDEB 2019',data:top30.map(d=>d.IDEB_AF_2019),backgroundColor:'#4f7bff',borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:16}}},scales:{y:{min:3,grid:{color:'rgba(99,140,255,.06)'}},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}}}}});
+
+// Abandono charts
+const topA=[...DATA].sort((a,b)=>b.Taxa_Abandono_AF_2024-a.Taxa_Abandono_AF_2024).slice(0,10);
+new Chart(document.getElementById('chartAbandonoTop'),{type:'bar',data:{labels:topA.map(d=>d.Municipio),datasets:[{label:'Evasão (%)',data:topA.map(d=>d.Taxa_Abandono_AF_2024),backgroundColor:topA.map(d=>d.Taxa_Abandono_AF_2024>5?'#ff6b6b':'#fbbf24'),borderRadius:3,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw}%`}}},scales:{x:{grid:{color:'rgba(99,140,255,.06)'}},y:{grid:{display:false}}}}});
+const ef={zero:DATA.filter(d=>d.Taxa_Abandono_AF_2024===0).length,baixa:DATA.filter(d=>d.Taxa_Abandono_AF_2024>0&&d.Taxa_Abandono_AF_2024<0.5).length,atencao:DATA.filter(d=>d.Taxa_Abandono_AF_2024>=0.5&&d.Taxa_Abandono_AF_2024<=2).length,critica:DATA.filter(d=>d.Taxa_Abandono_AF_2024>2).length};
+new Chart(document.getElementById('chartAbandonoDist'),{type:'doughnut',data:{labels:['Zero (0%)','Baixa (<0.5%)','Atenção (0.5–2%)','Crítica (>2%)'],datasets:[{data:[ef.zero,ef.baixa,ef.atencao,ef.critica],backgroundColor:['#34d399','#4f7bff','#fbbf24','#ff6b6b'],borderWidth:2,borderColor:'#111827'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,font:{size:10}}},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} municípios`}}}}});
+const sd=DATA.map(d=>({x:d.Taxa_Aprovacao_AF_2024,y:d.Taxa_Abandono_AF_2024,r:Math.max(3,d.IDEB_AF_2019*1.5),label:d.Municipio,ideb:d.IDEB_AF_2019}));
+new Chart(document.getElementById('chartScatter'),{type:'bubble',data:{datasets:[{label:'Municípios',data:sd,backgroundColor:sd.map(d=>d.y>2?ga('#ff6b6b',.7):d.y>0.5?ga('#fbbf24',.7):ga('#4f7bff',.5)),borderColor:sd.map(d=>d.y>2?'#ff6b6b':d.y>0.5?'#fbbf24':'#4f7bff'),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const d=ctx.raw;return[d.label,`Aprovação: ${d.x}%`,`Evasão: ${d.y}%`,`IDEB 2019: ${d.ideb}`]}}}},scales:{x:{title:{display:true,text:'Taxa de Aprovação 2024 (%)',color:'#6b7a99'},min:88,max:101,grid:{color:'rgba(99,140,255,.06)'}},y:{title:{display:true,text:'Taxa de Evasão 2024 (%)',color:'#6b7a99'},grid:{color:'rgba(99,140,255,.06)'}}}}});
+
+// Table
+let currentSort='ideb19',currentOrder='desc';
+function setSort(f){document.getElementById('sortSelect').value=f;filterTable()}
+function filterTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  currentSort=document.getElementById('sortSelect').value;
+  currentOrder=document.getElementById('orderSelect').value;
+  const km={ideb19:'IDEB_AF_2019',ideb17:'IDEB_AF_2017',abandono:'Taxa_Abandono_AF_2024',aprovacao:'Taxa_Aprovacao_AF_2024'};
+  const key=km[currentSort];
+  let fd=DATA.filter(d=>d.Municipio.toLowerCase().includes(q));
+  fd.sort((a,b)=>currentOrder==='desc'?b[key]-a[key]:a[key]-b[key]);
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  fd.forEach((d,i)=>{
+    const aband=d.Taxa_Abandono_AF_2024;
+    const ac=aband>2?'badge-red':aband>0.5?'badge-yellow':'badge-green';
+    const b17=Math.round((d.IDEB_AF_2017/8)*50);
+    const b19=Math.round((d.IDEB_AF_2019/8)*50);
+    const ms=d.IDEB_AF_2019>=5?'<span class="badge badge-green">Atingida</span>':'<span class="badge badge-red">Não atingida</span>';
+    tbody.innerHTML+=`<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:500;color:var(--text)">${d.Municipio}</td><td>${d.IDEB_AF_2017.toFixed(1)} <span class="spark-bar" style="width:${b17}px;background:var(--muted)"></span></td><td style="color:var(--accent);font-weight:600">${d.IDEB_AF_2019.toFixed(1)} <span class="spark-bar" style="width:${b19}px"></span></td><td>${d.Taxa_Aprovacao_AF_2024.toFixed(1)}%</td><td><span class="badge ${ac}">${aband.toFixed(1)}%</span></td><td>${ms}</td></tr>`;
+  });
+}
+filterTable();
+</script>
+</body>
+</html>
